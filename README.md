@@ -5,7 +5,7 @@ miniweb需要组合net/http使用。
 
 这是我写的第一个golang程序。代码写得丑勿怪。
 
-## Sample：
+## Sample
 ~~~ go
 package main
 
@@ -38,12 +38,12 @@ func main() {
         return true
     })
 
-    router.GetFunc("/username/?:username(^\\w*$)", func(in *miniweb.Input, out miniweb.Output) bool {
-        username := in.Fields["username"]
-        if len(username) > 0 {
-            out.Return(http.StatusOK, []byte(fmt.Sprintln("username:", username)))
+    router.GetFunc("/user/?:user(^\\w*$)", func(in *miniweb.Input, out miniweb.Output) bool {
+        user := in.Fields["user"]
+        if len(user) > 0 {
+            out.Return(http.StatusOK, []byte(fmt.Sprintln("user:", user)))
         } else {
-            out.Return(http.StatusOK, []byte(fmt.Sprintln("No username")))
+            out.Return(http.StatusOK, []byte(fmt.Sprintln("No user")))
         }
         return true
     })
