@@ -230,9 +230,49 @@ func (Router) filter_apply(filters []interface{}, in *Input, out Output) (ok boo
         }
 
         switch in.Request.Method {
+        case "OPTIONS":
+            if f, y := filter.(OptionsFilter); y {
+                over = f.Options(in, out)
+                ok = true
+            }
+        case "HEAD":
+            if f, y := filter.(HeadFilter); y {
+                over = f.Head(in, out)
+                ok = true
+            }
         case "GET":
             if f, y := filter.(GetFilter); y {
                 over = f.Get(in, out)
+                ok = true
+            }
+        case "POST":
+            if f, y := filter.(PostFilter); y {
+                over = f.Post(in, out)
+                ok = true
+            }
+        case "PUT":
+            if f, y := filter.(PutFilter); y {
+                over = f.Put(in, out)
+                ok = true
+            }
+        case "PATCH":
+            if f, y := filter.(PatchFilter); y {
+                over = f.Patch(in, out)
+                ok = true
+            }
+        case "DELETE":
+            if f, y := filter.(DeleteFilter); y {
+                over = f.Delete(in, out)
+                ok = true
+            }
+        case "TRACE":
+            if f, y := filter.(TraceFilter); y {
+                over = f.Trace(in, out)
+                ok = true
+            }
+        case "CONNECT":
+            if f, y := filter.(ConnectFilter); y {
+                over = f.Connect(in, out)
                 ok = true
             }
         }
