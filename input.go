@@ -9,5 +9,4 @@ type Input struct {
 
     Fields       map[string]string
     QueryStrings map[string][]string
-    //Fragment string
 }

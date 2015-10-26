@@ -21,7 +21,7 @@ type routing struct {
     Trailers []*routing
 }
 
-func (self *routing) match(path []string) (routes []matchedRoute, ok bool) {
+func (self routing) match(path []string) (routes []matchedRoute, ok bool) {
     if len(path) == 0 {
         if len(self.Filters) > 0 {
             route := matchedRoute{Filters: self.Filters}
@@ -215,10 +215,12 @@ func (self *routing) addFilter(pattern []string, filter interface{}) {
 //路由器
 type Router struct {
     root *routing //路由树根
+    
+    notFoundFilter NotFoundFilter    //可选自定义404处理
 }
 
 func NewRouter() *Router {
-    return &Router{&routing{}}
+    return &Router{&routing{}, nil}
 }
 
 func (Router) filter_apply(filters []interface{}, in *Input, out Output) (ok bool, over bool) {
@@ -330,14 +332,6 @@ func (self Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    //net/http的RequestURL不带fragment
-    //    //解析片段
-    //    var fragment string
-    //    parts = strings.Split(r.RequestURI, "#")
-    //    if len(parts) > 1 {
-    //        fragment = parts[1]
-    //    }
-
     //分派处理
     if routes, ok := self.root.match(path); ok {
         for _, route := range routes {
@@ -350,7 +344,7 @@ func (self Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
                 }
                 fields[key] = route.Values[idx]
             }
-            in := Input{Request: r, Fields: fields, QueryStrings: querystrings /*, Fragment: fragment*/}
+            in := Input{Request: r, Fields: fields, QueryStrings: querystrings}
 
             if ok, over := self.filter_apply(route.Filters, &in, out); ok {
                 if over {
@@ -360,21 +354,21 @@ func (self Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         }
     } 
     
-    self.NotFound(out)
+    self.notFound(out)
 }
 
 //返回404
-func (Router) NotFound(out Output) {
+func (self Router) notFound(out Output) {
+    if self.notFoundFilter != nil {
+        self.notFoundFilter.NotFound(out)
+        return
+    }
+    
     out.Return(http.StatusNotFound, []byte(http.StatusText(http.StatusNotFound)))
 }
 
-//返回405
-func (Router) MethodNotAllowed(out Output) {
-    out.Return(http.StatusMethodNotAllowed, []byte(http.StatusText(http.StatusMethodNotAllowed)))
-}
-
 //添加一个filter
-func (self Router) Filter(pattern string, filter interface{}) {
+func (self *Router) Filter(pattern string, filter interface{}) {
     pattern = strings.ToLower(pattern)
 
     var parts []string
@@ -395,82 +389,90 @@ func (self Router) Filter(pattern string, filter interface{}) {
     self.root.addFilter(parts, filter)
 }
 
-func (self Router) Any(pattern string, filter AnyFilter) {
+func (self *Router) Any(pattern string, filter AnyFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) AnyFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) AnyFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, AnyFunc(filter))
 }
 
-func (self Router) Options(pattern string, filter OptionsFilter) {
+func (self *Router) Options(pattern string, filter OptionsFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) OptionsFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) OptionsFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, OptionsFunc(filter))
 }
 
-func (self Router) Head(pattern string, filter HeadFilter) {
+func (self *Router) Head(pattern string, filter HeadFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) HeadFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) HeadFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, HeadFunc(filter))
 }
 
-func (self Router) Get(pattern string, filter GetFilter) {
+func (self *Router) Get(pattern string, filter GetFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) GetFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) GetFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, GetFunc(filter))
 }
 
-func (self Router) Post(pattern string, filter PostFilter) {
+func (self *Router) Post(pattern string, filter PostFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) PostFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) PostFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, PostFunc(filter))
 }
 
-func (self Router) Put(pattern string, filter PutFilter) {
+func (self *Router) Put(pattern string, filter PutFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) PutFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) PutFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, PutFunc(filter))
 }
 
-func (self Router) Patch(pattern string, filter PatchFilter) {
+func (self *Router) Patch(pattern string, filter PatchFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) PatchtFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) PatchtFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, PatchFunc(filter))
 }
 
-func (self Router) Delete(pattern string, filter DeleteFilter) {
+func (self *Router) Delete(pattern string, filter DeleteFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) DeleteFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) DeleteFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, DeleteFunc(filter))
 }
 
-func (self Router) Trace(pattern string, filter TraceFilter) {
+func (self *Router) Trace(pattern string, filter TraceFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) TraceFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) TraceFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, TraceFunc(filter))
 }
 
-func (self Router) Connect(pattern string, filter ConnectFilter) {
+func (self *Router) Connect(pattern string, filter ConnectFilter) {
     self.Filter(pattern, filter)
 }
 
-func (self Router) ConnectFunc(pattern string, filter func(*Input, Output) bool) {
+func (self *Router) ConnectFunc(pattern string, filter func(*Input, Output) bool) {
     self.Filter(pattern, ConnectFunc(filter))
+}
+
+func (self *Router) NotFound(filter NotFoundFilter) {
+    self.notFoundFilter = filter
+}
+
+func (self *Router) NotFoundFunc(filter func(Output)) {
+    self.NotFound(NotFoundFunc(filter))
 }

@@ -101,3 +101,13 @@ type ConnectFunc func(*Input, Output) bool
 func (f ConnectFunc) Connect(in *Input, out Output) bool {
     return f(in, out)
 }
+
+type NotFoundFilter interface {
+    NotFound(Output)
+}
+
+type NotFoundFunc func(Output)
+
+func (f NotFoundFunc) NotFound(out Output) {
+    f(out)
+}

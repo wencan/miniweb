@@ -20,7 +20,7 @@ import (
 type HelloFilter struct{}
 
 func (HelloFilter) Get(in *miniweb.Input, out miniweb.Output) bool {
-    out.Return(http.StatusOK, []byte("Hello\n"))
+    out.Ok([]byte("Hello\n"))
     return true
 }
 
@@ -34,16 +34,16 @@ func main() {
     router.Get("/hello", HelloFilter{})
 
     router.GetFunc("/player/:playerid(^\\w*$)/item/:itemid", func(in *miniweb.Input, out miniweb.Output) bool {
-        out.Return(http.StatusOK, []byte(fmt.Sprintf("Hello, %s\n", in.Fields["playerid"])))
+        out.Ok([]byte(fmt.Sprintf("Hello, %s\n", in.Fields["playerid"])))
         return true
     })
 
     router.GetFunc("/user/?:user(^\\w*$)", func(in *miniweb.Input, out miniweb.Output) bool {
         user := in.Fields["user"]
         if len(user) > 0 {
-            out.Return(http.StatusOK, []byte(fmt.Sprintln("user:", user)))
+            out.Ok([]byte(fmt.Sprintln("user:", user)))
         } else {
-            out.Return(http.StatusOK, []byte(fmt.Sprintln("No user")))
+            out.Ok([]byte(fmt.Sprintln("No user")))
         }
         return true
     })
